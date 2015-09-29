@@ -29,6 +29,7 @@ public class WifiReceiver extends BroadcastReceiver {
 
         if (WifiManager.NETWORK_STATE_CHANGED_ACTION.equals(action)) {
             NetworkInfo info = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
+
             if (info != null && info.isConnected()) {
                 WifiInfo wifiInfo = wifiManager.getConnectionInfo();
                 Toast.makeText(context, "You connected to: " + wifiInfo.getSSID(), Toast.LENGTH_SHORT).show();

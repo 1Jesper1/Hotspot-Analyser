@@ -37,6 +37,8 @@ public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
         }
 
         viewHolder.ssid.setText(result.SSID);
+        viewHolder.bssid.setText(result.BSSID);
+        viewHolder.rssi.setText(String.valueOf(result.level));
 
         return convertView;
     }
@@ -45,6 +47,10 @@ public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
 
         @Bind(R.id.network_ssid)
         TextView ssid;
+        @Bind(R.id.network_bssid)
+        TextView bssid;
+        @Bind(R.id.network_rssi)
+        TextView rssi;
 
         public NetworkItemViewHolder(View itemView) {
             ButterKnife.bind(this, itemView);

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -26,8 +27,12 @@ import de.greenrobot.event.EventBus;
 
 public class MainActivity extends AppCompatActivity {
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
+    private static final int REFRESH_RATE = 1;
 
     private final EventBus mBus = EventBus.getDefault();
+    private final Handler mRefreshHandler = new Handler();
+
+    private WifiManager mWifiManager;
 
     @Bind(R.id.toolbar)
     Toolbar mToolbar;
@@ -41,6 +46,8 @@ public class MainActivity extends AppCompatActivity {
         ButterKnife.bind(this);
 
         setSupportActionBar(mToolbar);
+
+        mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
     }
 
     @Override
@@ -48,9 +55,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         mBus.register(this);
-
-        WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        wifiManager.startScan();
+        mRefreshHandler.post(mRefreshRunnable);
     }
 
     @Override
@@ -58,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
 
         mBus.unregister(this);
+        mRefreshHandler.removeCallbacks(mRefreshRunnable);
     }
 
     @Override
@@ -76,10 +82,6 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            return true;
-        } else if (id == R.id.action_refresh) {
-            WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-            wifiManager.startScan();
             return true;
         }
 
@@ -100,4 +102,15 @@ public class MainActivity extends AppCompatActivity {
             adapter.addAll(results);
         }
     }
+
+    private final Runnable mRefreshRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mWifiManager != null) {
+                mWifiManager.startScan();
+            }
+
+            mRefreshHandler.postDelayed(this, REFRESH_RATE);
+        }
+    };
 }
