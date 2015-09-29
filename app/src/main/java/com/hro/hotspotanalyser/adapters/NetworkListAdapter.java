@@ -40,8 +40,7 @@ public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
         viewHolder.bssid.setText(result.BSSID);
         viewHolder.rssi.setText(String.valueOf(result.level));
         viewHolder.auth.setText(String.valueOf(getAuthenticationType(result.capabilities)));
-
-
+        
         return convertView;
     }
 
@@ -59,21 +58,21 @@ public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
         public NetworkItemViewHolder(View itemView) {
             ButterKnife.bind(this, itemView);
         }
-
     }
 
+    // Function to check for authentication type of hotspot
     public String getAuthenticationType(String cap){
-        if (cap.contains("WEP"))
-        {return "WEP";}
-
-        else if (cap.contains("WPA2"))
-        {return "WPA2";}
-
-        else if (cap.contains("WPA"))
-        {return "WPA";}
-        else
+        if (cap.contains("WEP")) {
+            return "WEP";
+        }
+        else if (cap.contains("WPA2")) {
+            return "WPA2";
+        }
+        else if (cap.contains("WPA")) {
+            return "WPA";
+        }
+        else {
             return "OPEN";
-
+        }
     }
-
 }
