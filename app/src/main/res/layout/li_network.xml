@@ -16,6 +16,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
+        android:layout_marginTop="6dp"
         tools:text="RSSI"/>
 
     <TextView
@@ -34,5 +35,15 @@
         android:layout_below="@id/network_ssid"
         style="@style/TextAppearance.AppCompat.Caption"
         tools:text="BSSID"/>
+
+    <TextView
+        android:id="@+id/network_auth"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/network_rssi"
+        android:layout_marginLeft="-70dp"
+        android:layout_marginTop="8dp"
+        style="@style/TextAppearance.AppCompat.Caption"
+        tools:text="AUTH"/>
 
 </RelativeLayout>

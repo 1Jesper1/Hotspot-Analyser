@@ -39,6 +39,8 @@ public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
         viewHolder.ssid.setText(result.SSID);
         viewHolder.bssid.setText(result.BSSID);
         viewHolder.rssi.setText(String.valueOf(result.level));
+        viewHolder.auth.setText(String.valueOf(getAuthenticationType(result.capabilities)));
+
 
         return convertView;
     }
@@ -51,10 +53,26 @@ public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
         TextView bssid;
         @Bind(R.id.network_rssi)
         TextView rssi;
+        @Bind(R.id.network_auth)
+        TextView auth;
 
         public NetworkItemViewHolder(View itemView) {
             ButterKnife.bind(this, itemView);
         }
+
+    }
+
+    public String getAuthenticationType(String cap){
+        if (cap.contains("WEP"))
+        {return "WEP";}
+
+        else if (cap.contains("WPA2"))
+        {return "WPA2";}
+
+        else if (cap.contains("WPA"))
+        {return "WPA";}
+        else
+            return "OPEN";
 
     }
 
