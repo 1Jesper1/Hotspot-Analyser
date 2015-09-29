@@ -39,8 +39,8 @@ public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
         viewHolder.ssid.setText(result.SSID);
         viewHolder.bssid.setText(result.BSSID);
         viewHolder.rssi.setText(String.valueOf(result.level));
-        viewHolder.auth.setText(String.valueOf(getAuthenticationType(result.capabilities)));
-        
+        viewHolder.auth.setText(getAuthenticationType(result.capabilities));
+
         return convertView;
     }
 
