@@ -71,7 +71,7 @@ public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
         }
     }
 
-    //Funtion to check for captive portal
+    //Function to check for captive portal
     public Boolean hasCaptivePortal(ScanResult result){
         //If network is not open
         if(getAuthenticationType(result.capabilities) != "OPEN") {
