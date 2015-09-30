@@ -21,12 +21,21 @@
         tools:text="RSSI"/>
 
     <TextView
+        android:id="@+id/network_auth"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toStartOf="@id/network_rssi"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="6dp"
+        style="@style/TextAppearance.AppCompat.Caption"
+        tools:text="AUTH"/>
+
+    <TextView
         android:id="@+id/network_ssid"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toStartOf="@id/network_auth"
         android:layout_alignParentStart="true"
-        android:singleLine="true"
         style="@style/TextAppearance.AppCompat.Title"
         tools:text="SSID"/>
 
@@ -38,14 +47,5 @@
         style="@style/TextAppearance.AppCompat.Caption"
         tools:text="BSSID"/>
 
-    <TextView
-        android:id="@+id/network_auth"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toStartOf="@id/network_rssi"
-        android:layout_marginTop="6dp"
-        android:layout_marginEnd="6dp"
-        style="@style/TextAppearance.AppCompat.Caption"
-        tools:text="AUTH"/>
 
 </RelativeLayout>
