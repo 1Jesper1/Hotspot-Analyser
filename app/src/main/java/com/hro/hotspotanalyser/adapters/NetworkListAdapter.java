@@ -44,10 +44,7 @@ public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
             viewHolder = (NetworkItemViewHolder) convertView.getTag();
         }
 
-        boolean captivePortal = hasCaptivePortal(result);
-
-
-        viewHolder.ssid.setText(result.SSID);
+        viewHolder.ssid.setText(result.SSID.isEmpty() ? "Hidden SSID" : result.SSID );
         viewHolder.bssid.setText(result.BSSID);
         viewHolder.rssi.setText(String.valueOf(result.level));
         viewHolder.auth.setText(getAuthenticationType(result.capabilities));
@@ -68,39 +65,6 @@ public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
 
         public NetworkItemViewHolder(View itemView) {
             ButterKnife.bind(this, itemView);
-        }
-    }
-
-    //Function to check for captive portal
-    public Boolean hasCaptivePortal(ScanResult result){
-        //If network is not open
-        if(getAuthenticationType(result.capabilities) != "OPEN") {
-            return false;
-        }
-        //If network is open
-        else {
-            WifiConfiguration wifiConfiguration = new WifiConfiguration();
-            wifiConfiguration.SSID = result.SSID;
-            wifiConfiguration.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
-            wifiConfiguration.BSSID = result.BSSID;
-            wifiConfiguration.hiddenSSID = false;
-
-            wifi = (WifiManager) this.getContext().getSystemService(Context.WIFI_SERVICE);
-            int networkID = wifi.addNetwork(wifiConfiguration);
-            wifi.disconnect();
-            wifi.enableNetwork(networkID, true);
-            wifi.reconnect();
-            //Check for captive portal
-            /*if(CAPTIVE PORTAL}}{
-                WifiInfo wifiInfo = wifi.getConnectionInfo();
-                supState = wifiInfo.getSupplicantState();
-                return true;
-            }
-            //Not captive portal
-            else{
-                return false;
-            }*/
-
         }
     }
 
