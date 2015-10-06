@@ -27,7 +27,7 @@ import de.greenrobot.event.EventBus;
 
 public class MainActivity extends AppCompatActivity {
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
-    private static final int REFRESH_RATE = 1;
+    private static final int REFRESH_RATE = 5000;
 
     private final EventBus mBus = EventBus.getDefault();
     private final Handler mRefreshHandler = new Handler();
