@@ -21,12 +21,12 @@ import butterknife.ButterKnife;
 
 public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
 
-    WifiManager wifi;
-    SupplicantState supState;
-    Boolean captivePortal;
+    private final Context mContext;
 
     public NetworkListAdapter(Context context, List<ScanResult> objects) {
         super(context, 0, objects);
+
+        mContext = context;
     }
 
     @Override
@@ -44,7 +44,7 @@ public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
             viewHolder = (NetworkItemViewHolder) convertView.getTag();
         }
 
-        viewHolder.ssid.setText(result.SSID.isEmpty() ? "Hidden SSID" : result.SSID );
+        viewHolder.ssid.setText(result.SSID.isEmpty() ? mContext.getString(R.string.ssid_hidden) : result.SSID );
         viewHolder.bssid.setText(result.BSSID);
         viewHolder.rssi.setText(String.valueOf(result.level));
         viewHolder.auth.setText(getAuthenticationType(result.capabilities));
@@ -72,14 +72,11 @@ public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
     public String getAuthenticationType(String cap){
         if (cap.contains("WEP")) {
             return "WEP";
-        }
-        else if (cap.contains("WPA2")) {
+        } else if (cap.contains("WPA2")) {
             return "WPA2";
-        }
-        else if (cap.contains("WPA")) {
+        } else if (cap.contains("WPA")) {
             return "WPA";
-        }
-        else {
+        } else {
             return "OPEN";
         }
     }
