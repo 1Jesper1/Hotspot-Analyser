@@ -78,11 +78,9 @@ public class WifiReceiver extends BroadcastReceiver {
             if (currentConfig != null && currentConfig.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.NONE)) {
                 //Check captive portal
                 boolean isCaptivePortal = checkCaptivePortal(wifiManager);
-                //Only check certificates if there is an captive portal
-                if(isCaptivePortal) {
-                    //Check server certificates
-                    boolean isValidCertificate = checkServerCertificates(sRedirectLink);
-                }
+                //Check server certificates only when there is an captive portal
+                boolean isValidCertificate = isCaptivePortal ? checkServerCertificates(sRedirectLink) : false;
+
                 Log.d(LOG_TAG, "Is captive portal: " + isCaptivePortal);
             }
 
