@@ -13,10 +13,16 @@ import android.util.Log;
 
 import com.hro.hotspotanalyser.events.WifiScanResultsEvent;
 
-
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateExpiredException;
+import java.security.cert.CertificateNotYetValidException;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLPeerUnverifiedException;
 
 import de.greenrobot.event.EventBus;
 
@@ -25,6 +31,7 @@ public class WifiReceiver extends BroadcastReceiver {
     private static final String LOG_TAG = WifiReceiver.class.getSimpleName();
     private static final String WALLED_GARDEN_URL = "http://clients3.google.com/generate_204";
     private static final int WALLED_GARDEN_SOCKET_TIMEOUT_MS = 10000;
+    private static String sRedirectLink;
 
     private final EventBus mBus = EventBus.getDefault();
     private final Handler mTimeoutHandler = new Handler();
@@ -69,7 +76,10 @@ public class WifiReceiver extends BroadcastReceiver {
 
             // Only analyze when there's no protection
             if (currentConfig != null && currentConfig.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.NONE)) {
+                //Check captive portal
                 boolean isCaptivePortal = checkCaptivePortal(wifiManager);
+                //Check server certificates
+                boolean isValidCertificate = checkServerCertificates(sRedirectLink);
                 Log.d(LOG_TAG, "Is captive portal: " + isCaptivePortal);
             }
 
@@ -79,7 +89,6 @@ public class WifiReceiver extends BroadcastReceiver {
         private boolean checkCaptivePortal(WifiManager wifiManager) {
             WifiInfo wifiInfo = wifiManager.getConnectionInfo();
             NetworkInfo.DetailedState detailedState = WifiInfo.getDetailedStateOf(wifiInfo.getSupplicantState());
-
             if (detailedState == NetworkInfo.DetailedState.CAPTIVE_PORTAL_CHECK) {
                 return true;
             } else {
@@ -89,6 +98,7 @@ public class WifiReceiver extends BroadcastReceiver {
 
                     urlConnection = (HttpURLConnection) url.openConnection();
                     urlConnection.setInstanceFollowRedirects(false);
+                    sRedirectLink = urlConnection.getHeaderField("Location");
                     urlConnection.setConnectTimeout(WALLED_GARDEN_SOCKET_TIMEOUT_MS);
                     urlConnection.setReadTimeout(WALLED_GARDEN_SOCKET_TIMEOUT_MS);
                     urlConnection.setUseCaches(false);
@@ -105,6 +115,50 @@ public class WifiReceiver extends BroadcastReceiver {
                 }
             }
         }
-    }
 
+        // Certificate check
+        public boolean checkServerCertificates(String url){
+            //If there was a redirect
+            if (!url.isEmpty()) {
+                HttpsURLConnection conn;
+                try {
+                    URL obj = new URL(sRedirectLink);
+                    conn = (HttpsURLConnection) obj.openConnection();
+                    if (conn != null) {
+
+                        try {
+                            conn.connect();
+                            //Get server certificates
+                            Certificate[] certificates = conn.getServerCertificates();
+                            //Loop over the certificates
+                            for( Certificate cert : certificates){
+                                X509Certificate x509cert = (X509Certificate)cert;
+                                //Check if certificate is valid
+                                x509cert.checkValidity();
+                                //return something if one or all are valid
+                                return true;
+                            }
+                        } catch (MalformedURLException e) {
+                            e.printStackTrace();
+                        } catch (SSLPeerUnverifiedException e) {
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } catch (CertificateExpiredException e) {
+                            e.printStackTrace();
+                        } catch (CertificateNotYetValidException e) {
+                            e.printStackTrace();
+                        } finally {
+                            conn.disconnect();
+                        }
+                    }
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            return false;
+        }
+    }
 }
