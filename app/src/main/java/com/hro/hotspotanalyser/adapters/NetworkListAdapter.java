@@ -1,6 +1,7 @@
 package com.hro.hotspotanalyser.adapters;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.net.wifi.ScanResult;
 import android.net.wifi.SupplicantState;
 import android.net.wifi.WifiConfiguration;
@@ -44,7 +45,7 @@ public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
             viewHolder = (NetworkItemViewHolder) convertView.getTag();
         }
 
-        viewHolder.ssid.setText(result.SSID.isEmpty() ? "Hidden SSID" : result.SSID );
+        viewHolder.ssid.setText(result.SSID.isEmpty() ? Resources.getSystem().getString(R.string.hidden_ssid) : result.SSID );
         viewHolder.bssid.setText(result.BSSID);
         viewHolder.rssi.setText(String.valueOf(result.level));
         viewHolder.auth.setText(getAuthenticationType(result.capabilities));

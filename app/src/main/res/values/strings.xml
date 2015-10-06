@@ -2,4 +2,5 @@
     <string name="app_name">Hotspot Analyser</string>
     <string name="action_settings">Settings</string>
     <string name="action_refresh">Refresh</string>
+    <string name="hidden_ssid">Hidden SSID</string>
 </resources>
