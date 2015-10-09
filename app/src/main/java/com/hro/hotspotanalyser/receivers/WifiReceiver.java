@@ -128,7 +128,7 @@ public class WifiReceiver extends BroadcastReceiver {
         // Certificate check
         public boolean checkServerCertificates(String url){
             //If there was a redirect
-            if (!url.isEmpty()) {
+            if (!url.isEmpty() && url.startsWith("https://")) {
                 HttpsURLConnection conn;
                 try {
                     URL obj = new URL(mRedirectUrl);
@@ -139,16 +139,18 @@ public class WifiReceiver extends BroadcastReceiver {
                             conn.connect();
                             //Get server certificates
                             Certificate[] certificates = conn.getServerCertificates();
-                            //Loop over the certificates
-                            for (Certificate cert : certificates){
-                                X509Certificate x509cert = (X509Certificate)cert;
-                                //Check if certificate is valid
-                                x509cert.checkValidity();
-                                //return something if one or all are valid
+                            if(certificates.length > 0) {
+                                //Loop over the certificates
+                                for (Certificate cert : certificates) {
+                                    X509Certificate x509cert = (X509Certificate) cert;
+                                    //Check if certificate is valid
+                                    x509cert.checkValidity();
+                                }
                                 return true;
                             }
+                            return false;
                         } catch (IOException | CertificateExpiredException | CertificateNotYetValidException e) {
-                            e.printStackTrace();
+                            return false;
                         } finally {
                             conn.disconnect();
                         }
