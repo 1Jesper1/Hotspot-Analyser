@@ -95,7 +95,7 @@ public class WifiReceiver extends BroadcastReceiver {
             } else {
                 HttpURLConnection urlConnection = null;
                 try {
-                    URL url = new URL(WALLED_GARDEN_URL); // "http://clients3.google.com/generate_204"
+                    URL url = new URL(WALLED_GARDEN_URL);
 
                     urlConnection = (HttpURLConnection) url.openConnection();
                     urlConnection.setInstanceFollowRedirects(false);
