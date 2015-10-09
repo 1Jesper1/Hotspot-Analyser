@@ -31,7 +31,6 @@ public class WifiReceiver extends BroadcastReceiver {
     private static final String LOG_TAG = WifiReceiver.class.getSimpleName();
     private static final String WALLED_GARDEN_URL = "http://clients3.google.com/generate_204";
     private static final int WALLED_GARDEN_SOCKET_TIMEOUT_MS = 10000;
-    private static String sRedirectLink;
 
     private final EventBus mBus = EventBus.getDefault();
     private final Handler mTimeoutHandler = new Handler();
@@ -61,6 +60,9 @@ public class WifiReceiver extends BroadcastReceiver {
     }
 
     private static final class AnalyzeNetworkTask extends AsyncTask<WifiManager, Void, Void> {
+
+        private String mRedirectUrl;
+
         @Override
         protected Void doInBackground(WifiManager... wifiManagers) {
             WifiManager wifiManager = wifiManagers[0];
@@ -79,7 +81,7 @@ public class WifiReceiver extends BroadcastReceiver {
                 //Check captive portal
                 boolean isCaptivePortal = checkCaptivePortal(wifiManager);
                 //Check server certificates only when there is an captive portal
-                boolean isValidCertificate = isCaptivePortal && checkServerCertificates(sRedirectLink);
+                boolean isValidCertificate = isCaptivePortal && checkServerCertificates(mRedirectUrl);
 
                 Log.d(LOG_TAG, "Is captive portal: " + isCaptivePortal);
             }
@@ -90,6 +92,7 @@ public class WifiReceiver extends BroadcastReceiver {
         private boolean checkCaptivePortal(WifiManager wifiManager) {
             WifiInfo wifiInfo = wifiManager.getConnectionInfo();
             NetworkInfo.DetailedState detailedState = WifiInfo.getDetailedStateOf(wifiInfo.getSupplicantState());
+
             if (detailedState == NetworkInfo.DetailedState.CAPTIVE_PORTAL_CHECK) {
                 return true;
             } else {
@@ -99,14 +102,19 @@ public class WifiReceiver extends BroadcastReceiver {
 
                     urlConnection = (HttpURLConnection) url.openConnection();
                     urlConnection.setInstanceFollowRedirects(false);
-                    sRedirectLink = urlConnection.getHeaderField("Location");
                     urlConnection.setConnectTimeout(WALLED_GARDEN_SOCKET_TIMEOUT_MS);
                     urlConnection.setReadTimeout(WALLED_GARDEN_SOCKET_TIMEOUT_MS);
                     urlConnection.setUseCaches(false);
                     urlConnection.getInputStream();
 
-                    // We got a valid response, but not from the real google
-                    return urlConnection.getResponseCode() != 204;
+                    int responseCode = urlConnection.getResponseCode();
+
+                    if (responseCode != 204) {
+                        mRedirectUrl = urlConnection.getHeaderField("Location");
+                        return true;
+                    }
+
+                    return false;
                 } catch (IOException e) {
                     return false;
                 } finally {
@@ -123,7 +131,7 @@ public class WifiReceiver extends BroadcastReceiver {
             if (!url.isEmpty()) {
                 HttpsURLConnection conn;
                 try {
-                    URL obj = new URL(sRedirectLink);
+                    URL obj = new URL(mRedirectUrl);
                     conn = (HttpsURLConnection) obj.openConnection();
                     if (conn != null) {
 
