@@ -79,7 +79,7 @@ public class WifiReceiver extends BroadcastReceiver {
                 //Check captive portal
                 boolean isCaptivePortal = checkCaptivePortal(wifiManager);
                 //Check server certificates only when there is an captive portal
-                boolean isValidCertificate = isCaptivePortal ? checkServerCertificates(sRedirectLink) : false;
+                boolean isValidCertificate = isCaptivePortal && checkServerCertificates(sRedirectLink);
 
                 Log.d(LOG_TAG, "Is captive portal: " + isCaptivePortal);
             }
