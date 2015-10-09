@@ -132,29 +132,19 @@ public class WifiReceiver extends BroadcastReceiver {
                             //Get server certificates
                             Certificate[] certificates = conn.getServerCertificates();
                             //Loop over the certificates
-                            for( Certificate cert : certificates){
+                            for (Certificate cert : certificates){
                                 X509Certificate x509cert = (X509Certificate)cert;
                                 //Check if certificate is valid
                                 x509cert.checkValidity();
                                 //return something if one or all are valid
                                 return true;
                             }
-                        } catch (MalformedURLException e) {
-                            e.printStackTrace();
-                        } catch (SSLPeerUnverifiedException e) {
-                            e.printStackTrace();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        } catch (CertificateExpiredException e) {
-                            e.printStackTrace();
-                        } catch (CertificateNotYetValidException e) {
+                        } catch (IOException | CertificateExpiredException | CertificateNotYetValidException e) {
                             e.printStackTrace();
                         } finally {
                             conn.disconnect();
                         }
                     }
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
