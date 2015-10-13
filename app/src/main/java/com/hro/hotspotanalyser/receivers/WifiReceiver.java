@@ -3,11 +3,14 @@ package com.hro.hotspotanalyser.receivers;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.Network;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
 
@@ -21,6 +24,8 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
+import java.util.List;
+
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLPeerUnverifiedException;
 
@@ -53,7 +58,7 @@ public class WifiReceiver extends BroadcastReceiver {
             NetworkInfo info = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
 
             if (info != null && info.isConnected()) {
-                new AnalyzeNetworkTask().execute(wifiManager);
+                new AnalyzeNetworkTask(context).execute(wifiManager);
             }
         }
 
@@ -61,23 +66,33 @@ public class WifiReceiver extends BroadcastReceiver {
 
     private static final class AnalyzeNetworkTask extends AsyncTask<WifiManager, Void, Void> {
 
+        private final Context mContext;
         private String mRedirectUrl;
+        private Network mWifiNetwork;
+
+        public AnalyzeNetworkTask(Context context) {
+            this.mContext = context;
+        }
 
         @Override
         protected Void doInBackground(WifiManager... wifiManagers) {
             WifiManager wifiManager = wifiManagers[0];
 
-            double safetyMeter = 0.0;
             WifiConfiguration currentConfig = null;
 
-            for (WifiConfiguration conf : wifiManager.getConfiguredNetworks()) {
-                if (conf.status == WifiConfiguration.Status.CURRENT) {
-                    currentConfig = conf;
+            List<WifiConfiguration> configuredNetworks = wifiManager.getConfiguredNetworks();
+            if (configuredNetworks != null ) {
+                for (WifiConfiguration conf : wifiManager.getConfiguredNetworks()) {
+                    if (conf.status == WifiConfiguration.Status.CURRENT) {
+                        currentConfig = conf;
+                        break;
+                    }
                 }
             }
 
+
             // Only analyze when there's no protection
-            if (currentConfig != null && currentConfig.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.NONE)) {
+            if (currentConfig != null /*&& currentConfig.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.NONE)*/) {
                 //Check captive portal
                 boolean isCaptivePortal = checkCaptivePortal(wifiManager);
                 //Check server certificates only when there is an captive portal
@@ -93,6 +108,23 @@ public class WifiReceiver extends BroadcastReceiver {
             WifiInfo wifiInfo = wifiManager.getConnectionInfo();
             NetworkInfo.DetailedState detailedState = WifiInfo.getDetailedStateOf(wifiInfo.getSupplicantState());
 
+            mWifiNetwork = null;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                ConnectivityManager cManager = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+                Network[] networks = null;
+
+                networks = cManager.getAllNetworks();
+
+                for (Network n : networks) {
+                    NetworkInfo info = cManager.getNetworkInfo(n);
+                    if (info.getType() == ConnectivityManager.TYPE_WIFI) {
+                        mWifiNetwork = n;
+                        break;
+                    }
+                }
+            }
+
             if (detailedState == NetworkInfo.DetailedState.CAPTIVE_PORTAL_CHECK) {
                 return true;
             } else {
@@ -100,7 +132,12 @@ public class WifiReceiver extends BroadcastReceiver {
                 try {
                     URL url = new URL(WALLED_GARDEN_URL);
 
-                    urlConnection = (HttpURLConnection) url.openConnection();
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mWifiNetwork != null) {
+                        urlConnection = (HttpURLConnection) mWifiNetwork.openConnection(url);
+                    } else {
+                        urlConnection = (HttpURLConnection) url.openConnection();
+                    }
+
                     urlConnection.setInstanceFollowRedirects(false);
                     urlConnection.setConnectTimeout(WALLED_GARDEN_SOCKET_TIMEOUT_MS);
                     urlConnection.setReadTimeout(WALLED_GARDEN_SOCKET_TIMEOUT_MS);
@@ -126,37 +163,38 @@ public class WifiReceiver extends BroadcastReceiver {
         }
 
         // Certificate check
-        public boolean checkServerCertificates(String url){
+        public boolean checkServerCertificates(String redirectUrl){
             //If there was a redirect
-            if (!url.isEmpty() && url.startsWith("https://")) {
-                HttpsURLConnection conn;
+            if (!redirectUrl.isEmpty() && redirectUrl.startsWith("https://")) {
+                HttpsURLConnection conn = null;
                 try {
-                    URL obj = new URL(mRedirectUrl);
-                    conn = (HttpsURLConnection) obj.openConnection();
-                    if (conn != null) {
+                    URL url = new URL(mRedirectUrl);
 
-                        try {
-                            conn.connect();
-                            //Get server certificates
-                            Certificate[] certificates = conn.getServerCertificates();
-                            if(certificates.length > 0) {
-                                //Loop over the certificates
-                                for (Certificate cert : certificates) {
-                                    X509Certificate x509cert = (X509Certificate) cert;
-                                    //Check if certificate is valid
-                                    x509cert.checkValidity();
-                                }
-                                return true;
-                            }
-                            return false;
-                        } catch (IOException | CertificateExpiredException | CertificateNotYetValidException e) {
-                            return false;
-                        } finally {
-                            conn.disconnect();
-                        }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mWifiNetwork != null) {
+                        conn = (HttpsURLConnection) mWifiNetwork.openConnection(url);
+                    } else {
+                        conn = (HttpsURLConnection) url.openConnection();
                     }
-                } catch (IOException e) {
+
+                    conn.connect();
+                    //Get server certificates
+                    Certificate[] certificates = conn.getServerCertificates();
+                    if(certificates.length > 0) {
+                        //Loop over the certificates
+                        for (Certificate cert : certificates) {
+                            X509Certificate x509cert = (X509Certificate) cert;
+                            //Check if certificate is valid
+                            x509cert.checkValidity();
+                        }
+                        return true;
+                    }
+                    return false;
+                } catch (IOException | CertificateExpiredException | CertificateNotYetValidException e) {
                     e.printStackTrace();
+                } finally {
+                    if (conn != null) {
+                        conn.disconnect();
+                    }
                 }
             }
             return false;
