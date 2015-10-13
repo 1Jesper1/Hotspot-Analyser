@@ -92,7 +92,7 @@ public class WifiReceiver extends BroadcastReceiver {
 
 
             // Only analyze when there's no protection
-            if (currentConfig != null /*&& currentConfig.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.NONE)*/) {
+            if (currentConfig != null && currentConfig.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.NONE)) {
                 //Check captive portal
                 boolean isCaptivePortal = checkCaptivePortal(wifiManager);
                 //Check server certificates only when there is an captive portal
