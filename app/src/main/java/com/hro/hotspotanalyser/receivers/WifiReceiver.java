@@ -191,7 +191,6 @@ public class WifiReceiver extends BroadcastReceiver {
                     }
                     return false;
                 } catch (IOException | CertificateExpiredException | CertificateNotYetValidException e) {
-                    e.printStackTrace();
                     return false;
                 } finally {
                     if (conn != null) {
