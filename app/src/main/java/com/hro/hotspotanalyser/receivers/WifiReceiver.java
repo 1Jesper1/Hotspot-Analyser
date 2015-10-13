@@ -18,7 +18,6 @@ import com.hro.hotspotanalyser.events.WifiScanResultsEvent;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateExpiredException;
@@ -27,7 +26,6 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLPeerUnverifiedException;
 
 import de.greenrobot.event.EventBus;
 
@@ -94,9 +92,9 @@ public class WifiReceiver extends BroadcastReceiver {
             // Only analyze when there's no protection
             if (currentConfig != null && currentConfig.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.NONE)) {
                 //Check captive portal
-                boolean isCaptivePortal = checkCaptivePortal(wifiManager);
+                boolean isCaptivePortal = isCaptivePortal(wifiManager);
                 //Check server certificates only when there is an captive portal
-                boolean isValidCertificate = isCaptivePortal && checkServerCertificates(mRedirectUrl);
+                boolean isValidCertificate = isCaptivePortal && hasValidCertificates(mRedirectUrl);
 
                 Log.d(LOG_TAG, "Is captive portal: " + isCaptivePortal);
             }
@@ -104,7 +102,7 @@ public class WifiReceiver extends BroadcastReceiver {
             return null;
         }
 
-        private boolean checkCaptivePortal(WifiManager wifiManager) {
+        private boolean isCaptivePortal(WifiManager wifiManager) {
             WifiInfo wifiInfo = wifiManager.getConnectionInfo();
             NetworkInfo.DetailedState detailedState = WifiInfo.getDetailedStateOf(wifiInfo.getSupplicantState());
 
@@ -163,7 +161,7 @@ public class WifiReceiver extends BroadcastReceiver {
         }
 
         // Certificate check
-        public boolean checkServerCertificates(String redirectUrl){
+        public boolean hasValidCertificates(String redirectUrl){
             //If there was a redirect
             if (!redirectUrl.isEmpty() && redirectUrl.startsWith("https://")) {
                 HttpsURLConnection conn = null;
