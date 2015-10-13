@@ -17,6 +17,7 @@ import android.util.Log;
 import com.hro.hotspotanalyser.events.WifiScanResultsEvent;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.cert.Certificate;
@@ -166,7 +167,7 @@ public class WifiReceiver extends BroadcastReceiver {
             if (!redirectUrl.isEmpty() && redirectUrl.startsWith("https://")) {
                 HttpsURLConnection conn = null;
                 try {
-                    URL url = new URL(mRedirectUrl);
+                    URL url = new URL(redirectUrl);
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mWifiNetwork != null) {
                         conn = (HttpsURLConnection) mWifiNetwork.openConnection(url);
@@ -175,6 +176,8 @@ public class WifiReceiver extends BroadcastReceiver {
                     }
 
                     conn.connect();
+                    conn.getInputStream();
+
                     //Get server certificates
                     Certificate[] certificates = conn.getServerCertificates();
                     if(certificates.length > 0) {
