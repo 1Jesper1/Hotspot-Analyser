@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateExpiredException;
@@ -97,7 +99,7 @@ public class WifiReceiver extends BroadcastReceiver {
 
                 // Get the captive portal url, if any
                 String captivePortalUrl = getCaptivePortalUrl();
-                boolean hasCaptivePortal = captivePortalUrl == null;
+                boolean hasCaptivePortal = !captivePortalUrl.isEmpty() ? true : false;
 
                 // Get the certificates, if any
                 X509Certificate[] certificates = getCertificates(captivePortalUrl);
@@ -125,6 +127,21 @@ public class WifiReceiver extends BroadcastReceiver {
         @Override
         protected void onPostExecute(AnalyzerResult analyzerResult) {
             // Generate a notification based on the result
+        }
+
+        public static String hexifyBytes (byte bytes[]) {
+
+            char[] hexDigits = {'0', '1', '2', '3', '4', '5', '6', '7',
+                    '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
+            StringBuffer buf = new StringBuffer(bytes.length * 2);
+
+            for (int i = 0; i < bytes.length; ++i) {
+                buf.append(hexDigits[(bytes[i] & 0xf0) >> 4]);
+                buf.append(hexDigits[bytes[i] & 0x0f]);
+            }
+
+            return buf.toString();
         }
 
         private String getCaptivePortalUrl() {
@@ -161,7 +178,8 @@ public class WifiReceiver extends BroadcastReceiver {
                     conn.getInputStream();
 
                     //Get server certificates
-                    return (X509Certificate[]) conn.getServerCertificates();
+                    Certificate[] certificates = conn.getServerCertificates();
+                    return Arrays.copyOf(certificates, certificates.length, X509Certificate[].class);
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {
@@ -198,16 +216,26 @@ public class WifiReceiver extends BroadcastReceiver {
             }
 
             try {
-                boolean portalMatches = knownInfo.captivePortalUrl.equals(portalUrl);
+                boolean portalMatches = portalUrl.startsWith(knownInfo.captivePortalUrl);
                 boolean certMatches = false;
 
                 if (siteCert == null) {
                     certMatches = knownInfo.certificateFingerprint == null;
                 } else {
-                    certMatches = Arrays.equals(knownInfo.certificateFingerprint, siteCert.getEncoded());
-                }
+                    MessageDigest md = MessageDigest.getInstance("SHA-1");
+                    byte[] der = siteCert.getEncoded();
+                    md.update(der);
+                    byte[] digest = md.digest();
+                    String hexedFingerprint = hexifyBytes(digest);
 
+                    certMatches = knownInfo.certificateFingerprint.equals(hexedFingerprint);
+                }
                 return portalMatches && certMatches;
+
+
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+                return false;
             } catch (CertificateEncodingException e) {
                 e.printStackTrace();
                 return false;
