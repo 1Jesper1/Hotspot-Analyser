@@ -250,8 +250,7 @@ public class WifiReceiver extends BroadcastReceiver {
                 for (Network n : networks) {
                     NetworkInfo info = cManager.getNetworkInfo(n);
                     if (info != null && info.getType() == ConnectivityManager.TYPE_WIFI) {
-                        mWifiNetwork = n;
-                        break;
+                        return n;
                     }
                 }
             }
