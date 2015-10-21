@@ -15,8 +15,19 @@ import com.hro.hotspotanalyser.events.WifiScanResultsEvent;
 import com.hro.hotspotanalyser.models.AnalyzerResult;
 import com.hro.hotspotanalyser.models.HotspotInfo;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.MessageDigest;
@@ -69,6 +80,7 @@ public class WifiReceiver extends BroadcastReceiver {
 
         private final Context mContext;
         private Network mWifiNetwork;
+        public String mFingerPrint;
 
         public AnalyzeNetworkTask(Context context) {
             this.mContext = context;
@@ -79,6 +91,7 @@ public class WifiReceiver extends BroadcastReceiver {
             WifiManager wifiManager = wifiManagers[0];
 
             mWifiNetwork = getWifiNetwork();
+            mFingerPrint = null;
             WifiConfiguration currentConfig = null;
 
             List<WifiConfiguration> configuredNetworks = wifiManager.getConfiguredNetworks();
@@ -113,6 +126,17 @@ public class WifiReceiver extends BroadcastReceiver {
                 // Compare the gathered information against possibly known information about this hotspot ssid
                 boolean matchesKnown = matchesKnownInfo(hotspotInfo, captivePortalUrl, areValidCerts ? certificates[0] : null);
 
+                if(hasCaptivePortal && areValidCerts) {
+                    if(!readFromFile().contains(ssid + ", " + captivePortalUrl + ", " + mFingerPrint)){
+                        try {
+                            URL testUrl = new URL(captivePortalUrl);
+                            String parsedUrl = testUrl.getProtocol() + "://" + testUrl.getHost();
+                            writeToFile(ssid + ", " + parsedUrl + ", " + mFingerPrint);
+                        } catch (MalformedURLException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
                 return new AnalyzerResult(
                         hasCaptivePortal,
                         areValidCerts,
@@ -122,6 +146,50 @@ public class WifiReceiver extends BroadcastReceiver {
             }
 
             return null;
+        }
+
+        private void writeToFile(String data) {
+            try {
+                File path=new File(mContext.getFilesDir(),"myfolder");
+                if (!path.exists()) {
+                    path.mkdirs();
+                }
+                File mypath =new File(path,"hotspots.txt");
+                BufferedWriter br = new BufferedWriter(new FileWriter(mypath));
+                br.write(data);
+                br.close();
+            }
+            catch (IOException e) {
+            }
+        }
+
+        private String readFromFile() {
+
+            String ret = "";
+
+            try {
+                    FileInputStream inputStream = mContext.openFileInput("hotspots.txt");
+
+                    if (inputStream != null) {
+                        InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+                        BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+                        String receiveString = "";
+                        StringBuilder stringBuilder = new StringBuilder();
+
+                        while ((receiveString = bufferedReader.readLine()) != null) {
+                            stringBuilder.append(receiveString);
+                        }
+
+                        inputStream.close();
+                        ret = stringBuilder.toString();
+                    }
+                }
+            catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return ret;
         }
 
         @Override
@@ -212,6 +280,7 @@ public class WifiReceiver extends BroadcastReceiver {
 
                     byte[] digest = md.digest();
                     String hexedFingerprint = hexifyBytes(digest);
+                    mFingerPrint = hexedFingerprint;
 
                     certMatches = knownInfo.certificateFingerprint.equals(hexedFingerprint);
                 }
