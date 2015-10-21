@@ -156,7 +156,7 @@ public class WifiReceiver extends BroadcastReceiver {
         // Certificate check
         private X509Certificate[] getCertificates(String portalUrl) {
             //If there was a redirect
-            if (!portalUrl.isEmpty() && portalUrl.startsWith("https://")) {
+            if (portalUrl != null && portalUrl.startsWith("https://")) {
                 HttpsURLConnection conn = null;
                 try {
                     conn = (HttpsURLConnection) getUrlConnection(portalUrl);
