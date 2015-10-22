@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -95,7 +96,7 @@ public class WifiReceiver extends BroadcastReceiver {
             WifiConfiguration currentConfig = null;
 
             List<WifiConfiguration> configuredNetworks = wifiManager.getConfiguredNetworks();
-            if (configuredNetworks != null ) {
+            if (configuredNetworks != null) {
                 for (WifiConfiguration conf : wifiManager.getConfiguredNetworks()) {
                     if (conf.status == WifiConfiguration.Status.CURRENT) {
                         currentConfig = conf;
@@ -125,16 +126,25 @@ public class WifiReceiver extends BroadcastReceiver {
 
                 // Compare the gathered information against possibly known information about this hotspot ssid
                 boolean matchesKnown = matchesKnownInfo(hotspotInfo, captivePortalUrl, areValidCerts ? certificates[0] : null);
-
-                if(hasCaptivePortal && areValidCerts) {
-                    if(!readFromFile().contains(ssid + ", " + captivePortalUrl + ", " + mFingerPrint)){
-                        try {
-                            URL testUrl = new URL(captivePortalUrl);
-                            String parsedUrl = testUrl.getProtocol() + "://" + testUrl.getHost();
-                            writeToFile(ssid + ", " + parsedUrl + ", " + mFingerPrint);
-                        } catch (MalformedURLException e) {
-                            e.printStackTrace();
+                //Only log network if network has valid certificates, a captive portal and is not yet known
+                if (hasCaptivePortal && areValidCerts && !matchesKnown) {
+                    URL parseUrl = null;
+                    try {
+                        parseUrl = new URL(captivePortalUrl);
+                        //Only parse protocol and host
+                        String parsedUrl = parseUrl.getProtocol() + "://" + parseUrl.getHost();
+                        //Check if file is null
+                        String fileContents = readFromFile();
+                        //If file does not contain the network
+                        if (fileContents != null && !fileContents.contains(ssid + ", " + parsedUrl + ", " + mFingerPrint)) {
+                            writeToFile("\n" + ssid + ", " + parsedUrl + ", " + mFingerPrint);
                         }
+                        //If file is null
+                        if (fileContents == null) {
+                            writeToFile(ssid + ", " + parsedUrl + ", " + mFingerPrint);
+                        }
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
                     }
                 }
                 return new AnalyzerResult(
@@ -150,46 +160,39 @@ public class WifiReceiver extends BroadcastReceiver {
 
         private void writeToFile(String data) {
             try {
-                File path=new File(mContext.getFilesDir(),"myfolder");
+                File path = new File(mContext.getFilesDir(), "");
                 if (!path.exists()) {
                     path.mkdirs();
                 }
-                File mypath =new File(path,"hotspots.txt");
-                BufferedWriter br = new BufferedWriter(new FileWriter(mypath));
-                br.write(data);
+                File mypath = new File(path, "hotspots.txt");
+                BufferedWriter br = new BufferedWriter(new FileWriter(mypath, true));
+                br.append(data);
                 br.close();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
             }
         }
 
         private String readFromFile() {
+            File path = new File(mContext.getFilesDir(), "");
+            if (path.exists()) {
+                try {
+                    File mypath = new File(path, "hotspots.txt");
+                    StringBuilder text = new StringBuilder();
 
-            String ret = "";
+                    BufferedReader br = new BufferedReader(new FileReader(mypath));
+                    String line;
 
-            try {
-                    FileInputStream inputStream = mContext.openFileInput("hotspots.txt");
-
-                    if (inputStream != null) {
-                        InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-                        BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-                        String receiveString = "";
-                        StringBuilder stringBuilder = new StringBuilder();
-
-                        while ((receiveString = bufferedReader.readLine()) != null) {
-                            stringBuilder.append(receiveString);
-                        }
-
-                        inputStream.close();
-                        ret = stringBuilder.toString();
+                    while ((line = br.readLine()) != null) {
+                        text.append(line);
                     }
+                    br.close();
+                    //Return StringBuilder to String
+                    return text.toString();
+                } catch (IOException e) {
+                    //You'll need to add proper error handling here
                 }
-            catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
             }
-            return ret;
+            return null;
         }
 
         @Override
@@ -294,7 +297,7 @@ public class WifiReceiver extends BroadcastReceiver {
 
         private URLConnection getUrlConnection(String target) throws IOException {
             URLConnection conn;
-            URL url= new URL(target);
+            URL url = new URL(target);
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mWifiNetwork != null) {
                 conn = mWifiNetwork.openConnection(url);
