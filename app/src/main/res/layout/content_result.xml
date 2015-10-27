@@ -13,4 +13,97 @@
     tools:context="com.hro.hotspotanalyser.ResultActivity"
     tools:showIn="@layout/activity_result">
 
+    <TextView
+        android:id="@+id/result_main_title"
+        style="@style/TextAppearance.AppCompat.Headline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="Test"/>
+
+    <TextView
+        android:id="@+id/result_main_details"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/result_main_title"
+        android:layout_marginBottom="16dp"
+        tools:text="Details"/>
+
+    <ImageView
+        android:id="@+id/result_portal_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_below="@id/result_main_details"
+        android:src="@drawable/ic_exclamation_black_48dp"/>
+    
+    <TextView
+        android:id="@+id/result_portal_title"
+        style="@style/TextAppearance.AppCompat.Headline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/result_main_details"
+        android:layout_toEndOf="@id/result_portal_icon"
+        android:text="@string/result_title_portal"/>
+
+    <TextView
+        android:id="@+id/result_portal_details"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/result_portal_title"
+        android:layout_alignStart="@id/result_portal_title"
+        android:layout_marginBottom="16dp"
+        android:text="Details"/>
+
+    <ImageView
+        android:id="@+id/result_certificate_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/result_portal_details"
+        android:layout_marginEnd="8dp"
+        android:src="@drawable/ic_done_black_48dp"/>
+
+    <TextView
+        android:id="@+id/result_certificate_title"
+        style="@style/TextAppearance.AppCompat.Headline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/result_portal_details"
+        android:layout_toEndOf="@id/result_certificate_icon"
+        android:text="@string/result_title_certificate"/>
+
+    <TextView
+        android:id="@+id/result_certificate_details"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/result_certificate_title"
+        android:layout_alignStart="@id/result_certificate_title"
+        android:layout_marginBottom="16dp"
+        android:text="Details"/>
+
+    <ImageView
+        android:id="@+id/result_known_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/result_certificate_details"
+        android:layout_marginEnd="8dp"
+        android:src="@drawable/ic_done_black_48dp"/>
+
+    <TextView
+        android:id="@+id/result_known_title"
+        style="@style/TextAppearance.AppCompat.Headline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/result_certificate_details"
+        android:layout_toEndOf="@id/result_known_icon"
+        android:text="@string/result_title_known"/>
+
+    <TextView
+        android:id="@+id/result_known_details"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/result_known_title"
+        android:layout_alignStart="@id/result_known_title"
+        android:layout_marginBottom="16dp"
+        android:text="Details"/>
+
 </RelativeLayout>

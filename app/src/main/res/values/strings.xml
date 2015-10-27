@@ -4,22 +4,27 @@
     <string name="action_refresh">Refresh</string>
     <string name="ssid_hidden">Hidden SSID</string>
 
+    <string name="title_activity_result">Result details</string>
+
     <string name="result_intro">Results of analysis of hotspot &quot;%1$s&quot;</string>
 
+    <string name="result_title_verdict">Verdict</string>
     <string name="result_safe">This hotspot is almost certainly safe!</string>
     <string name="result_probably_safe">This hotspot is probably safe!</string>
     <string name="result_probably_unsafe">This hotspot is probably not safe!</string>
     <string name="result_unsafe">This hotspot is almost certainly not safe!</string>
 
+    <string name="result_title_portal">Captive Portal</string>
     <string name="result_portal_present">A captive portal is present</string>
     <string name="result_portal_absent">A captive portal is absent</string>
 
+    <string name="result_title_certificate">Portal certificate</string>
     <string name="result_certificate_valid">A valid certificate is present</string>
     <string name="result_certificate_invalid">The certificate is invalid</string>
     <string name="result_certificate_missing">No certificate is present</string>
 
+    <string name="result_title_known">Known network</string>
     <string name="result_known_match">The network matches a known network</string>
     <string name="result_unknown">The network is unknown</string>
     <string name="result_known_mismatch">The network is known but does not match</string>
-    <string name="title_activity_result">ResultActivity</string>
 </resources>
