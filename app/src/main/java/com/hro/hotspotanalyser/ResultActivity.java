@@ -38,7 +38,11 @@ public class ResultActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        WifiAnalysisResultsEvent event = EventBus.getDefault().getStickyEvent(WifiAnalysisResultsEvent.class);
+        EventBus bus = EventBus.getDefault();
+
+        WifiAnalysisResultsEvent event = bus.getStickyEvent(WifiAnalysisResultsEvent.class);
+        bus.removeAllStickyEvents();
+
         if (event != null) {
             AnalyzerResult result = event.getResult();
 
