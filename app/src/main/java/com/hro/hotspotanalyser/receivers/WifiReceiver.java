@@ -1,6 +1,7 @@
 package com.hro.hotspotanalyser.receivers;
 
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -14,23 +15,14 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.support.v4.app.NotificationCompat;
 
+import com.hro.hotspotanalyser.MainActivity;
 import com.hro.hotspotanalyser.R;
+import com.hro.hotspotanalyser.ResultActivity;
 import com.hro.hotspotanalyser.events.WifiScanResultsEvent;
 import com.hro.hotspotanalyser.models.AnalyzerResult;
 import com.hro.hotspotanalyser.models.HotspotInfo;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -224,8 +216,15 @@ public class WifiReceiver extends BroadcastReceiver {
             notificationBuilder.setContentText(summary);
             notificationBuilder.setStyle(inboxStyle);
 
+            Intent resultIntent = new Intent(mContext, ResultActivity.class);
+            PendingIntent contentIntent = PendingIntent.getActivity(mContext, (int) System.currentTimeMillis(), resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+            notificationBuilder.setContentIntent(contentIntent);
+
             NotificationManager notificationManager =
                     (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+
+
             notificationManager.notify(1, notificationBuilder.build());
         }
 
