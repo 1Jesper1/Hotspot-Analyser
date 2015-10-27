@@ -180,19 +180,19 @@ public class WifiReceiver extends BroadcastReceiver {
             int resId;
             if (analyzerResult.hasCaptivePortal) {
                 resId = R.string.result_portal_present;
+
+                if (analyzerResult.hasCertificates) {
+                    if (analyzerResult.hasValidCertificates) {
+                        resId = R.string.result_certificate_valid;
+                    } else {
+                        resId = R.string.result_certificate_invalid;
+                    }
+                } else {
+                    resId = R.string.result_certificate_missing;
+                }
+                inboxStyle.addLine("- " + res.getString(resId));
             } else {
                 resId = R.string.result_portal_absent;
-            }
-            inboxStyle.addLine("- " + res.getString(resId));
-
-            if (analyzerResult.hasCertificates) {
-                if (analyzerResult.hasValidCertificates) {
-                    resId = R.string.result_certificate_valid;
-                } else {
-                    resId = R.string.result_certificate_invalid;
-                }
-            } else {
-                resId = R.string.result_certificate_missing;
             }
             inboxStyle.addLine("- " + res.getString(resId));
 
