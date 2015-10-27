@@ -1,8 +1,10 @@
 package com.hro.hotspotanalyser.receivers;
 
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkInfo;
@@ -10,7 +12,9 @@ import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.support.v4.app.NotificationCompat;
 
+import com.hro.hotspotanalyser.R;
 import com.hro.hotspotanalyser.events.WifiScanResultsEvent;
 import com.hro.hotspotanalyser.models.AnalyzerResult;
 import com.hro.hotspotanalyser.models.HotspotInfo;
@@ -38,6 +42,7 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -149,6 +154,7 @@ public class WifiReceiver extends BroadcastReceiver {
                 }
                 return new AnalyzerResult(
                         hasCaptivePortal,
+                        certificates != null && certificates.length > 0,
                         areValidCerts,
                         hotspotInfo != null,
                         matchesKnown
@@ -158,46 +164,69 @@ public class WifiReceiver extends BroadcastReceiver {
             return null;
         }
 
-        private void writeToFile(String data) {
-            try {
-                File path = new File(mContext.getFilesDir(), "");
-                if (!path.exists()) {
-                    path.mkdirs();
-                }
-                File mypath = new File(path, "hotspots.txt");
-                BufferedWriter br = new BufferedWriter(new FileWriter(mypath, true));
-                br.append(data);
-                br.close();
-            } catch (IOException e) {
-            }
-        }
 
-        private String readFromFile() {
-            File path = new File(mContext.getFilesDir(), "");
-            if (path.exists()) {
-                try {
-                    File mypath = new File(path, "hotspots.txt");
-                    StringBuilder text = new StringBuilder();
-
-                    BufferedReader br = new BufferedReader(new FileReader(mypath));
-                    String line;
-
-                    while ((line = br.readLine()) != null) {
-                        text.append(line);
-                    }
-                    br.close();
-                    //Return StringBuilder to String
-                    return text.toString();
-                } catch (IOException e) {
-                    //You'll need to add proper error handling here
-                }
-            }
-            return null;
-        }
 
         @Override
         protected void onPostExecute(AnalyzerResult analyzerResult) {
-            // Generate a notification based on the result
+            if (analyzerResult == null) {
+                return;
+            }
+
+            Resources res = mContext.getResources();
+
+            NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(mContext)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle(res.getString(R.string.app_name));
+
+            NotificationCompat.InboxStyle inboxStyle =
+                    new NotificationCompat.InboxStyle();
+
+            int resId;
+            if (analyzerResult.hasCaptivePortal) {
+                resId = R.string.result_portal_present;
+            } else {
+                resId = R.string.result_portal_absent;
+            }
+            inboxStyle.addLine(res.getString(resId));
+
+            if (analyzerResult.hasCertificates) {
+                if (analyzerResult.hasValidCertificates) {
+                    resId = R.string.result_certificate_valid;
+                } else {
+                    resId = R.string.result_certificate_invalid;
+                }
+            } else {
+                resId = R.string.result_certificate_missing;
+            }
+            inboxStyle.addLine(res.getString(resId));
+
+            if (analyzerResult.isKnown) {
+                if (analyzerResult.matchesKnown) {
+                    resId = R.string.result_known_match;
+                } else {
+                    resId = R.string.result_known_mismatch;
+                }
+            } else {
+                resId = R.string.result_unknown;
+            }
+            inboxStyle.addLine(res.getString(resId));
+
+            String summary;
+            if (analyzerResult.matchesKnown) {
+                summary = res.getString(R.string.result_safe);
+            } else if (analyzerResult.hasCaptivePortal && analyzerResult.hasValidCertificates) {
+                summary = res.getString(R.string.result_probably_safe);
+            } else {
+                summary = res.getString(R.string.result_probably_unsafe);
+            }
+
+            inboxStyle.setBigContentTitle(summary);
+            notificationBuilder.setContentText(summary);
+            notificationBuilder.setStyle(inboxStyle);
+
+            NotificationManager notificationManager =
+                    (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManager.notify(1, notificationBuilder.build());
         }
 
         private String getCaptivePortalUrl() {
@@ -330,7 +359,7 @@ public class WifiReceiver extends BroadcastReceiver {
             return null;
         }
 
-        public static String hexifyBytes(byte bytes[]) {
+        private static String hexifyBytes(byte bytes[]) {
             char[] hexDigits = {'0', '1', '2', '3', '4', '5', '6', '7',
                     '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
@@ -342,6 +371,43 @@ public class WifiReceiver extends BroadcastReceiver {
             }
 
             return buf.toString();
+        }
+
+        private void writeToFile(String data) {
+            try {
+                File path = new File(mContext.getFilesDir(), "");
+                if (!path.exists()) {
+                    path.mkdirs();
+                }
+                File mypath = new File(path, "hotspots.txt");
+                BufferedWriter br = new BufferedWriter(new FileWriter(mypath, true));
+                br.append(data);
+                br.close();
+            } catch (IOException e) {
+            }
+        }
+
+        private String readFromFile() {
+            File path = new File(mContext.getFilesDir(), "");
+            if (path.exists()) {
+                try {
+                    File mypath = new File(path, "hotspots.txt");
+                    StringBuilder text = new StringBuilder();
+
+                    BufferedReader br = new BufferedReader(new FileReader(mypath));
+                    String line;
+
+                    while ((line = br.readLine()) != null) {
+                        text.append(line);
+                    }
+                    br.close();
+                    //Return StringBuilder to String
+                    return text.toString();
+                } catch (IOException e) {
+                    //You'll need to add proper error handling here
+                }
+            }
+            return null;
         }
     }
 }
