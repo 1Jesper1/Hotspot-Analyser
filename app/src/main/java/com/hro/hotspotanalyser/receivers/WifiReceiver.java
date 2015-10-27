@@ -18,6 +18,7 @@ import android.support.v4.app.NotificationCompat;
 import com.hro.hotspotanalyser.MainActivity;
 import com.hro.hotspotanalyser.R;
 import com.hro.hotspotanalyser.ResultActivity;
+import com.hro.hotspotanalyser.events.WifiAnalysisResultsEvent;
 import com.hro.hotspotanalyser.events.WifiScanResultsEvent;
 import com.hro.hotspotanalyser.models.AnalyzerResult;
 import com.hro.hotspotanalyser.models.HotspotInfo;
@@ -144,7 +145,9 @@ public class WifiReceiver extends BroadcastReceiver {
                         e.printStackTrace();
                     }
                 }
+
                 return new AnalyzerResult(
+                        ssid,
                         hasCaptivePortal,
                         certificates != null && certificates.length > 0,
                         areValidCerts,
@@ -156,8 +159,6 @@ public class WifiReceiver extends BroadcastReceiver {
             return null;
         }
 
-
-
         @Override
         protected void onPostExecute(AnalyzerResult analyzerResult) {
             if (analyzerResult == null) {
@@ -167,11 +168,14 @@ public class WifiReceiver extends BroadcastReceiver {
             Resources res = mContext.getResources();
 
             NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(mContext)
-                    .setSmallIcon(R.mipmap.ic_launcher)
                     .setContentTitle(res.getString(R.string.app_name));
 
             NotificationCompat.InboxStyle inboxStyle =
                     new NotificationCompat.InboxStyle();
+
+            inboxStyle.addLine(
+                    res.getString(R.string.result_intro, analyzerResult.SSID)
+            );
 
             int resId;
             if (analyzerResult.hasCaptivePortal) {
@@ -179,7 +183,7 @@ public class WifiReceiver extends BroadcastReceiver {
             } else {
                 resId = R.string.result_portal_absent;
             }
-            inboxStyle.addLine(res.getString(resId));
+            inboxStyle.addLine("- " + res.getString(resId));
 
             if (analyzerResult.hasCertificates) {
                 if (analyzerResult.hasValidCertificates) {
@@ -190,7 +194,7 @@ public class WifiReceiver extends BroadcastReceiver {
             } else {
                 resId = R.string.result_certificate_missing;
             }
-            inboxStyle.addLine(res.getString(resId));
+            inboxStyle.addLine("- " + res.getString(resId));
 
             if (analyzerResult.isKnown) {
                 if (analyzerResult.matchesKnown) {
@@ -201,20 +205,30 @@ public class WifiReceiver extends BroadcastReceiver {
             } else {
                 resId = R.string.result_unknown;
             }
-            inboxStyle.addLine(res.getString(resId));
+            inboxStyle.addLine("- " + res.getString(resId));
 
-            String summary;
+            int summaryResource;
+            int iconResource;
+            int colorResource;
             if (analyzerResult.matchesKnown) {
-                summary = res.getString(R.string.result_safe);
+                colorResource = R.color.green;
+                iconResource = R.drawable.ic_done_white_24dp;
+                summaryResource = R.string.result_safe;
             } else if (analyzerResult.hasCaptivePortal && analyzerResult.hasValidCertificates) {
-                summary = res.getString(R.string.result_probably_safe);
+                colorResource = R.color.amber;
+                iconResource = R.drawable.ic_warning_white_24dp;
+                summaryResource = R.string.result_probably_safe;
             } else {
-                summary = res.getString(R.string.result_probably_unsafe);
+                colorResource = R.color.red;
+                iconResource = R.drawable.ic_exclamation_white_24dp;
+                summaryResource = R.string.result_probably_unsafe;
             }
 
-            inboxStyle.setBigContentTitle(summary);
-            notificationBuilder.setContentText(summary);
-            notificationBuilder.setStyle(inboxStyle);
+            inboxStyle.setBigContentTitle(res.getString(summaryResource));
+            notificationBuilder.setSmallIcon(iconResource)
+                    .setColor(res.getColor(colorResource))
+                    .setContentText(res.getString(summaryResource))
+                    .setStyle(inboxStyle);
 
             Intent resultIntent = new Intent(mContext, ResultActivity.class);
             PendingIntent contentIntent = PendingIntent.getActivity(mContext, (int) System.currentTimeMillis(), resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -223,9 +237,9 @@ public class WifiReceiver extends BroadcastReceiver {
 
             NotificationManager notificationManager =
                     (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
-
-
             notificationManager.notify(1, notificationBuilder.build());
+
+            EventBus.getDefault().postSticky(new WifiAnalysisResultsEvent(analyzerResult));
         }
 
         private String getCaptivePortalUrl() {

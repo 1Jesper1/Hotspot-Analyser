@@ -4,6 +4,8 @@
     <string name="action_refresh">Refresh</string>
     <string name="ssid_hidden">Hidden SSID</string>
 
+    <string name="result_intro">Results of analysis of hotspot &quot;%1$s&quot;</string>
+
     <string name="result_safe">This hotspot is almost certainly safe!</string>
     <string name="result_probably_safe">This hotspot is probably safe!</string>
     <string name="result_probably_unsafe">This hotspot is probably not safe!</string>
@@ -19,4 +21,5 @@
     <string name="result_known_match">The network matches a known network</string>
     <string name="result_unknown">The network is unknown</string>
     <string name="result_known_mismatch">The network is known but does not match</string>
+    <string name="title_activity_result">ResultActivity</string>
 </resources>
