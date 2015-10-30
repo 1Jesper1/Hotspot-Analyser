@@ -7,16 +7,19 @@
     <string name="title_activity_result">Result details</string>
 
     <string name="result_intro">Results of analysis of hotspot &quot;%1$s&quot;</string>
+    <string name="result_more_details">Tap notification for more details.</string>
 
     <string name="result_title_verdict">Verdict</string>
-    <string name="result_safe">This hotspot is almost certainly safe!</string>
+    <string name="result_safe">This hotspot is pretty safe!</string>
     <string name="result_probably_safe">This hotspot is probably safe!</string>
     <string name="result_probably_unsafe">This hotspot is probably not safe!</string>
-    <string name="result_unsafe">This hotspot is almost certainly not safe!</string>
+    <string name="result_unsafe">This hotspot is not very safe!</string>
+    <string name="result_error">Errors while checking hotspot</string>
 
     <string name="result_title_portal">Captive Portal</string>
     <string name="result_portal_present">A captive portal is present</string>
     <string name="result_portal_absent">A captive portal is absent</string>
+    <string name="result_portal_error">Error while checking for portal</string>
 
     <string name="result_title_certificate">Portal certificate</string>
     <string name="result_certificate_valid">A valid certificate is present</string>

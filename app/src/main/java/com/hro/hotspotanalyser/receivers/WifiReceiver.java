@@ -27,6 +27,7 @@ import com.hro.hotspotanalyser.exceptions.CertificateRetrievalException;
 import com.hro.hotspotanalyser.exceptions.MatchKnownException;
 import com.hro.hotspotanalyser.models.AnalyzerResult;
 import com.hro.hotspotanalyser.models.HotspotInfo;
+import com.hro.hotspotanalyser.models.SafetyLevel;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -157,6 +158,7 @@ public class WifiReceiver extends BroadcastReceiver {
 
                 return new AnalyzerResult(
                         ssid,
+                        exceptions.get(0) instanceof CaptivePortalCheckException,
                         hasCaptivePortal,
                         certificates != null && certificates.length > 0,
                         areValidCerts,
@@ -180,58 +182,78 @@ public class WifiReceiver extends BroadcastReceiver {
             NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(mContext)
                     .setContentTitle(res.getString(R.string.app_name));
 
-            NotificationCompat.InboxStyle inboxStyle =
-                    new NotificationCompat.InboxStyle();
-
+            NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
             inboxStyle.addLine(
                     res.getString(R.string.result_intro, analyzerResult.SSID)
             );
 
             int resId;
-            if (analyzerResult.hasCaptivePortal) {
+            if (analyzerResult.analysisFailed) {
+                resId = R.string.result_portal_error;
+            } else if (analyzerResult.hasCaptivePortal) {
                 resId = R.string.result_portal_present;
             } else {
                 resId = R.string.result_portal_absent;
             }
             inboxStyle.addLine("- " + res.getString(resId));
 
-            if (analyzerResult.hasCaptivePortal && analyzerResult.hasCertificates) {
-                if (analyzerResult.hasValidCertificates) {
-                    resId = R.string.result_certificate_valid;
+            if (!analyzerResult.analysisFailed) {
+                if (analyzerResult.hasCaptivePortal && analyzerResult.hasCertificates) {
+                    if (analyzerResult.hasValidCertificates) {
+                        resId = R.string.result_certificate_valid;
+                    } else {
+                        resId = R.string.result_certificate_invalid;
+                    }
                 } else {
-                    resId = R.string.result_certificate_invalid;
+                    resId = R.string.result_certificate_missing;
                 }
-            } else {
-                resId = R.string.result_certificate_missing;
-            }
-            inboxStyle.addLine("- " + res.getString(resId));
+                inboxStyle.addLine("- " + res.getString(resId));
 
-            if (analyzerResult.isKnown) {
-                if (analyzerResult.matchesKnown) {
-                    resId = R.string.result_known_match;
+                if (analyzerResult.isKnown) {
+                    if (analyzerResult.matchesKnown) {
+                        resId = R.string.result_known_match;
+                    } else {
+                        resId = R.string.result_known_mismatch;
+                    }
                 } else {
-                    resId = R.string.result_known_mismatch;
+                    resId = R.string.result_unknown;
                 }
-            } else {
-                resId = R.string.result_unknown;
+                inboxStyle.addLine("- " + res.getString(resId));
             }
-            inboxStyle.addLine("- " + res.getString(resId));
+
+            inboxStyle.addLine(res.getString(R.string.result_more_details));
 
             int summaryResource;
             int iconResource;
             int colorResource;
-            if (analyzerResult.matchesKnown) {
-                colorResource = R.color.green;
-                iconResource = R.drawable.ic_done_white_24dp;
-                summaryResource = R.string.result_safe;
-            } else if (analyzerResult.hasCaptivePortal && analyzerResult.hasValidCertificates) {
-                colorResource = R.color.amber;
-                iconResource = R.drawable.ic_warning_white_24dp;
-                summaryResource = R.string.result_probably_safe;
-            } else {
-                colorResource = R.color.red;
-                iconResource = R.drawable.ic_exclamation_white_24dp;
-                summaryResource = R.string.result_probably_unsafe;
+            SafetyLevel safetyLevel = analyzerResult.getSafetyLevel();
+
+            switch (safetyLevel) {
+                case Safe:
+                    colorResource = R.color.green;
+                    iconResource = R.drawable.ic_done_white_24dp;
+                    summaryResource = R.string.result_safe;
+                    break;
+                case PrettySafe:
+                    colorResource = R.color.green;
+                    iconResource = R.drawable.ic_done_white_24dp;
+                    summaryResource = R.string.result_probably_safe;
+                    break;
+                case Warning:
+                    colorResource = R.color.amber;
+                    iconResource = R.drawable.ic_warning_white_24dp;
+                    summaryResource = R.string.result_probably_safe;
+                    break;
+                case Dangerous:
+                    colorResource = R.color.red;
+                    iconResource = R.drawable.ic_exclamation_white_24dp;
+                    summaryResource = R.string.result_probably_unsafe;
+                    break;
+                case Error:
+                default:
+                    colorResource = R.color.red;
+                    iconResource = R.drawable.ic_exclamation_white_24dp;
+                    summaryResource = R.string.result_error;
             }
 
             inboxStyle.setBigContentTitle(res.getString(summaryResource));
@@ -241,7 +263,13 @@ public class WifiReceiver extends BroadcastReceiver {
                     .setStyle(inboxStyle);
 
             Intent resultIntent = new Intent(mContext, ResultActivity.class);
-            PendingIntent contentIntent = PendingIntent.getActivity(mContext, (int) System.currentTimeMillis(), resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            PendingIntent contentIntent =
+                    PendingIntent.getActivity(
+                            mContext,
+                            (int) System.currentTimeMillis(),
+                            resultIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT
+                    );
 
             notificationBuilder.setContentIntent(contentIntent);
 
