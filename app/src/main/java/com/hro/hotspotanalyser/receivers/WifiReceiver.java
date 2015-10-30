@@ -20,6 +20,11 @@ import com.hro.hotspotanalyser.R;
 import com.hro.hotspotanalyser.ResultActivity;
 import com.hro.hotspotanalyser.events.WifiAnalysisResultsEvent;
 import com.hro.hotspotanalyser.events.WifiScanResultsEvent;
+import com.hro.hotspotanalyser.exceptions.AbstractWrapperException;
+import com.hro.hotspotanalyser.exceptions.CaptivePortalCheckException;
+import com.hro.hotspotanalyser.exceptions.CertificateCheckException;
+import com.hro.hotspotanalyser.exceptions.CertificateRetrievalException;
+import com.hro.hotspotanalyser.exceptions.MatchKnownException;
 import com.hro.hotspotanalyser.models.AnalyzerResult;
 import com.hro.hotspotanalyser.models.HotspotInfo;
 
@@ -108,42 +113,46 @@ public class WifiReceiver extends BroadcastReceiver {
                 // Get Hotspot SSID
                 String ssid = currentConfig.SSID != null ? currentConfig.SSID.replaceAll("^\"|\"$", "") : null;
                 HotspotInfo hotspotInfo = HotspotInfo.getKnownNetworkInfo(ssid);
+                List<AbstractWrapperException> exceptions = new ArrayList<>();
 
                 // Get the captive portal url, if any
-                String captivePortalUrl = getCaptivePortalUrl();
+                String captivePortalUrl = null;
+                try {
+                    captivePortalUrl = getCaptivePortalUrl();
+                } catch (AbstractWrapperException e) {
+                    exceptions.add(e);
+                }
                 boolean hasCaptivePortal = captivePortalUrl != null;
 
                 // Get the certificates, if any
-                X509Certificate[] certificates = getCertificates(captivePortalUrl);
-                boolean areValidCerts = false;
+                X509Certificate[] certificates = null;
+                try {
+                    certificates = getCertificates(captivePortalUrl);
+                } catch (AbstractWrapperException e) {
+                    exceptions.add(e);
+                }
 
                 // If there are certificates, check if they're valid
-                if (certificates != null && certificates.length > 0) {
-                    areValidCerts = areValidCertificates(certificates);
+                boolean areValidCerts = false;
+                try {
+                    if (certificates != null && certificates.length > 0) {
+                        areValidCerts = areValidCertificates(certificates);
+                    }
+                } catch (AbstractWrapperException e) {
+                    exceptions.add(e);
                 }
 
                 // Compare the gathered information against possibly known information about this hotspot ssid
-                boolean matchesKnown = matchesKnownInfo(hotspotInfo, captivePortalUrl, areValidCerts ? certificates[0] : null);
+                boolean matchesKnown = false;
+                try {
+                    matchesKnown = matchesKnownInfo(hotspotInfo, captivePortalUrl, areValidCerts ? certificates[0] : null);
+                } catch (AbstractWrapperException e) {
+                    exceptions.add(e);
+                }
+
                 //Only log network if network has valid certificates, a captive portal and is not yet known
                 if (hasCaptivePortal && areValidCerts && !matchesKnown) {
-                    URL parseUrl = null;
-                    try {
-                        parseUrl = new URL(captivePortalUrl);
-                        //Only parse protocol and host
-                        String parsedUrl = parseUrl.getProtocol() + "://" + parseUrl.getHost();
-                        //Check if file is null
-                        String fileContents = readFromFile();
-                        //If file does not contain the network
-                        if (fileContents != null && !fileContents.contains(ssid + ", " + parsedUrl + ", " + mFingerPrint)) {
-                            writeToFile("\n" + ssid + ", " + parsedUrl + ", " + mFingerPrint);
-                        }
-                        //If file is null
-                        if (fileContents == null) {
-                            writeToFile(ssid + ", " + parsedUrl + ", " + mFingerPrint);
-                        }
-                    } catch (MalformedURLException e) {
-                        e.printStackTrace();
-                    }
+                    logNetwork(ssid, captivePortalUrl, mFingerPrint);
                 }
 
                 return new AnalyzerResult(
@@ -152,7 +161,8 @@ public class WifiReceiver extends BroadcastReceiver {
                         certificates != null && certificates.length > 0,
                         areValidCerts,
                         hotspotInfo != null,
-                        matchesKnown
+                        matchesKnown,
+                        exceptions
                 );
             }
 
@@ -242,7 +252,7 @@ public class WifiReceiver extends BroadcastReceiver {
             EventBus.getDefault().postSticky(new WifiAnalysisResultsEvent(analyzerResult));
         }
 
-        private String getCaptivePortalUrl() {
+        private String getCaptivePortalUrl() throws CaptivePortalCheckException {
             HttpURLConnection conn = null;
             try {
                 conn = (HttpURLConnection) getUrlConnection(WALLED_GARDEN_URL);
@@ -258,7 +268,7 @@ public class WifiReceiver extends BroadcastReceiver {
 
                 return null;
             } catch (IOException e) {
-                return null;
+                throw new CaptivePortalCheckException(e);
             } finally {
                 if (conn != null) {
                     conn.disconnect();
@@ -267,7 +277,7 @@ public class WifiReceiver extends BroadcastReceiver {
         }
 
         // Certificate check
-        private X509Certificate[] getCertificates(String portalUrl) {
+        private X509Certificate[] getCertificates(String portalUrl) throws CertificateRetrievalException {
             //If there was a redirect
             if (portalUrl != null && portalUrl.startsWith("https://")) {
                 HttpsURLConnection conn = null;
@@ -279,7 +289,7 @@ public class WifiReceiver extends BroadcastReceiver {
                     Certificate[] certificates = conn.getServerCertificates();
                     return Arrays.copyOf(certificates, certificates.length, X509Certificate[].class);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    throw new CertificateRetrievalException(e);
                 } finally {
                     if (conn != null) {
                         conn.disconnect();
@@ -290,7 +300,7 @@ public class WifiReceiver extends BroadcastReceiver {
             return null;
         }
 
-        private boolean areValidCertificates(X509Certificate[] certificates) {
+        private boolean areValidCertificates(X509Certificate[] certificates) throws CertificateCheckException {
             if (certificates.length > 0) {
                 try {
                     for (X509Certificate cert : certificates) {
@@ -300,14 +310,14 @@ public class WifiReceiver extends BroadcastReceiver {
 
                     return true;
                 } catch (CertificateExpiredException | CertificateNotYetValidException e) {
-                    e.printStackTrace();
+                    throw new CertificateCheckException(e);
                 }
             }
 
             return false;
         }
 
-        private boolean matchesKnownInfo(HotspotInfo knownInfo, String portalUrl, X509Certificate siteCert) {
+        private boolean matchesKnownInfo(HotspotInfo knownInfo, String portalUrl, X509Certificate siteCert) throws MatchKnownException {
             // If knownInfo is null, the ssid didn't match
             if (knownInfo == null) {
                 return false;
@@ -332,8 +342,7 @@ public class WifiReceiver extends BroadcastReceiver {
 
                 return portalMatches && certMatches;
             } catch (CertificateEncodingException | NoSuchAlgorithmException e) {
-                e.printStackTrace();
-                return false;
+                throw new MatchKnownException(e);
             }
         }
 
@@ -386,6 +395,27 @@ public class WifiReceiver extends BroadcastReceiver {
             return buf.toString();
         }
 
+        private void logNetwork(String ssid, String portalUrl, String fingerPrint) {
+            URL parseUrl = null;
+            try {
+                parseUrl = new URL(portalUrl);
+                //Only parse protocol and host
+                String parsedUrl = parseUrl.getProtocol() + "://" + parseUrl.getHost();
+                //Check if file is null
+                String fileContents = readFromFile();
+                //If file does not contain the network
+                if (fileContents != null && !fileContents.contains(ssid + ", " + parsedUrl + ", " + fingerPrint)) {
+                    writeToFile("\n" + ssid + ", " + parsedUrl + ", " + fingerPrint);
+                }
+                //If file is null
+                if (fileContents == null) {
+                    writeToFile(ssid + ", " + parsedUrl + ", " + fingerPrint);
+                }
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
+        }
+
         private void writeToFile(String data) {
             try {
                 File path = new File(mContext.getFilesDir(), "");
@@ -420,6 +450,7 @@ public class WifiReceiver extends BroadcastReceiver {
                     //You'll need to add proper error handling here
                 }
             }
+
             return null;
         }
     }
