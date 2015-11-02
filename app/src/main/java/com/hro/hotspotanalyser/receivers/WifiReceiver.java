@@ -158,7 +158,7 @@ public class WifiReceiver extends BroadcastReceiver {
 
                 return new AnalyzerResult(
                         ssid,
-                        exceptions.get(0) instanceof CaptivePortalCheckException,
+                        exceptions.size() > 0 && exceptions.get(0) instanceof CaptivePortalCheckException,
                         hasCaptivePortal,
                         certificates != null && certificates.length > 0,
                         areValidCerts,
@@ -242,12 +242,12 @@ public class WifiReceiver extends BroadcastReceiver {
                 case Warning:
                     colorResource = R.color.amber;
                     iconResource = R.drawable.ic_warning_white_24dp;
-                    summaryResource = R.string.result_probably_safe;
+                    summaryResource = R.string.result_probably_unsafe;
                     break;
                 case Dangerous:
                     colorResource = R.color.red;
                     iconResource = R.drawable.ic_exclamation_white_24dp;
-                    summaryResource = R.string.result_probably_unsafe;
+                    summaryResource = R.string.result_unsafe;
                     break;
                 case Error:
                 default:

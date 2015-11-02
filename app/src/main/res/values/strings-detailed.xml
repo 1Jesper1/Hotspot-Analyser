@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="result_detailed_safe">This hotspot is pretty damn safe. It\'s even known to be safe by us!</string>
+    <string name="result_detailed_probably_safe">This hotspot seems pretty safe. It has all the traits of a safe hotspot but it\'s an unknown network to us!</string>
+    <string name="result_detailed_probably_unsafe">This hotspot is not very safe. You should be cautious with what you do on it.</string>
+    <string name="result_detailed_unsafe">This hotspot is not safe. Be very careful with your activity!</string>
+    <string name="result_detailed_error">Some errors happened during testing.</string>
+
+    <string name="result_detailed_more">You can view some more details about the results below.</string>
+
+    <string name="result_detailed_portal_present">A captive portal is present. This means that you must first accept some terms before you\'re allowed to use the network.</string>
+    <string name="result_detailed_portal_absent">There\'s no captive portal. This means that you can use the network without accepting any terms. This is generally not very safe!</string>
+    <string name="result_detailed_portal_error">Some errors occurred while checking for the captive portal.</string>
+
+    <string name="result_detailed_certificate_valid">The captive portal has a valid HTTPS certificate. This means that we can be sure that the portal is not tampered with.</string>
+    <string name="result_detailed_certificate_invalid">The captive portal has a HTTPS certificate but it doesn\'t appear to be valid. Be cautious, this could potentially be very dangerous!</string>
+    <string name="result_detailed_certificate_missing">The captive portal does not have a certificate. This is generally unsafe and means the portal could possibly be tampered with.</string>
+
+    <string name="result_detailed_known_match">This network matches known and verified information. This means that the network should be very safe!</string>
+    <string name="result_detailed_known_mismatch">This network is known but it does not match the known information. This means that the network is most likely compromised or has been tampered with!</string>
+    <string name="result_detailed_unknown">This network is unknown to us.</string>
+</resources>

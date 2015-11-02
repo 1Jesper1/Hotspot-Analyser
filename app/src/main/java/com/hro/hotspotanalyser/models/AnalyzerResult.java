@@ -1,18 +1,10 @@
 package com.hro.hotspotanalyser.models;
 
-import android.content.Context;
-
 import com.hro.hotspotanalyser.exceptions.AbstractWrapperException;
-import com.hro.hotspotanalyser.exceptions.CaptivePortalCheckException;
 
 import java.util.List;
 
 public class AnalyzerResult {
-
-    public static final int SAFETY_LEVEL_SAFE = 100;
-    public static final int SAFETY_LEVEL_PRETTY_SAFE = 200;
-    public static final int SAFETY_LEVEL_WARNING = 300;
-    public static final int SAFETY_LEVEL_DANGEROUS = 400;
 
     public final String SSID;
     public final boolean analysisFailed;
