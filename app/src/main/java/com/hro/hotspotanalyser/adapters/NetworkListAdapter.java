@@ -2,6 +2,10 @@ package com.hro.hotspotanalyser.adapters;
 
 import android.content.Context;
 import android.net.wifi.ScanResult;
+import android.net.wifi.SupplicantState;
+import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiManager;
+import android.net.wifi.WifiInfo;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,8 +21,12 @@ import butterknife.ButterKnife;
 
 public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
 
+    private final Context mContext;
+
     public NetworkListAdapter(Context context, List<ScanResult> objects) {
         super(context, 0, objects);
+
+        mContext = context;
     }
 
     @Override
@@ -36,9 +44,10 @@ public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
             viewHolder = (NetworkItemViewHolder) convertView.getTag();
         }
 
-        viewHolder.ssid.setText(result.SSID);
+        viewHolder.ssid.setText(result.SSID.isEmpty() ? mContext.getString(R.string.ssid_hidden) : result.SSID );
         viewHolder.bssid.setText(result.BSSID);
         viewHolder.rssi.setText(String.valueOf(result.level));
+        viewHolder.auth.setText(getAuthenticationType(result.capabilities));
 
         return convertView;
     }
@@ -51,11 +60,24 @@ public class NetworkListAdapter extends ArrayAdapter<ScanResult> {
         TextView bssid;
         @Bind(R.id.network_rssi)
         TextView rssi;
+        @Bind(R.id.network_auth)
+        TextView auth;
 
         public NetworkItemViewHolder(View itemView) {
             ButterKnife.bind(this, itemView);
         }
-
     }
 
+    // Function to check for authentication type of hotspot
+    public String getAuthenticationType(String cap){
+        if (cap.contains("WEP")) {
+            return "WEP";
+        } else if (cap.contains("WPA2")) {
+            return "WPA2";
+        } else if (cap.contains("WPA")) {
+            return "WPA";
+        } else {
+            return "OPEN";
+        }
+    }
 }
