@@ -8,7 +8,6 @@ public class HotspotInfo {
     static {
         mKnownNetworks = new HashMap<>();
         mKnownNetworks.put("KPN Fon", new HotspotInfo("KPN Fon", "https://kpn.portal.fon.com/", "cb922c1965f60a9c6561ffd9fc851d5960642c4c"));
-        mKnownNetworks.put("Schamper0", new HotspotInfo("Schamper0", "https://bitbangers.co.uk/", "1a473f19b9181d7a40aed4cac4260a4fbf4d7dce"));
     }
 
     public final String SSID;
