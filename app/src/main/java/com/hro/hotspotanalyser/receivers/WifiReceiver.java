@@ -123,10 +123,14 @@ public class WifiReceiver extends BroadcastReceiver {
                 } catch (AbstractWrapperException e) {
                     exceptions.add(e);
                 }
-                boolean hasCaptivePortal = captivePortalUrl != null;
+                boolean hasCaptivePortal = false;
 
                 // Get the certificates, if any
                 X509Certificate[] certificates = null;
+                boolean hasCertificates = false;
+                if(captivePortalUrl != null && captivePortalUrl.startsWith(("https://"))){
+                    hasCaptivePortal = true;
+                }
                 try {
                     certificates = getCertificates(captivePortalUrl);
                 } catch (AbstractWrapperException e) {
@@ -152,9 +156,9 @@ public class WifiReceiver extends BroadcastReceiver {
                 }
 
                 //Only log network if network has valid certificates, a captive portal and is not yet known
-                if (hasCaptivePortal && areValidCerts && !matchesKnown) {
-                    logNetwork(ssid, captivePortalUrl, mFingerPrint);
-                }
+                //if (hasCaptivePortal && areValidCerts && !matchesKnown) {
+                    logNetwork(ssid, captivePortalUrl, mFingerPrint, hasCertificates, areValidCerts);
+                //}
 
                 return new AnalyzerResult(
                         ssid,
@@ -167,7 +171,6 @@ public class WifiReceiver extends BroadcastReceiver {
                         exceptions
                 );
             }
-
             return null;
         }
 
@@ -423,21 +426,24 @@ public class WifiReceiver extends BroadcastReceiver {
             return buf.toString();
         }
 
-        private void logNetwork(String ssid, String portalUrl, String fingerPrint) {
+        private void logNetwork(String ssid, String portalUrl, String fingerPrint, Boolean hasCertificates, Boolean areValidCerts) {
             URL parseUrl = null;
+            String parsedUrl = null;
             try {
-                parseUrl = new URL(portalUrl);
-                //Only parse protocol and host
-                String parsedUrl = parseUrl.getProtocol() + "://" + parseUrl.getHost();
+                if(portalUrl != null) {
+                    parseUrl = new URL(portalUrl);
+                    //Only parse protocol and host
+                    parsedUrl = parseUrl.getProtocol() + "://" + parseUrl.getHost();
+                }
                 //Check if file is null
                 String fileContents = readFromFile();
                 //If file does not contain the network
-                if (fileContents != null && !fileContents.contains(ssid + ", " + parsedUrl + ", " + fingerPrint)) {
-                    writeToFile("\n" + ssid + ", " + parsedUrl + ", " + fingerPrint);
+                if (fileContents != null && !fileContents.contains(ssid + ", " + parsedUrl + ", " + fingerPrint + ", " + hasCertificates + ", " + areValidCerts)) {
+                    writeToFile("\n" + ssid + ", " + parsedUrl + ", " + fingerPrint + ", " + hasCertificates + ", " + areValidCerts);
                 }
                 //If file is null
                 if (fileContents == null) {
-                    writeToFile(ssid + ", " + parsedUrl + ", " + fingerPrint);
+                    writeToFile(ssid + ", " + parsedUrl + ", " + fingerPrint + ", " + hasCertificates + ", " + areValidCerts);
                 }
             } catch (MalformedURLException e) {
                 e.printStackTrace();
