@@ -14,8 +14,8 @@ import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.support.v4.app.NotificationCompat;
+import android.webkit.CookieManager;
 
-import com.hro.hotspotanalyser.MainActivity;
 import com.hro.hotspotanalyser.R;
 import com.hro.hotspotanalyser.ResultActivity;
 import com.hro.hotspotanalyser.events.WifiAnalysisResultsEvent;
@@ -123,14 +123,10 @@ public class WifiReceiver extends BroadcastReceiver {
                 } catch (AbstractWrapperException e) {
                     exceptions.add(e);
                 }
-                boolean hasCaptivePortal = false;
-
+                boolean hasCaptivePortal = captivePortalUrl != null;
                 // Get the certificates, if any
                 X509Certificate[] certificates = null;
-                boolean hasCertificates = false;
-                if(captivePortalUrl != null && captivePortalUrl.startsWith(("https://"))){
-                    hasCaptivePortal = true;
-                }
+                boolean hasCertificates = captivePortalUrl != null && captivePortalUrl.startsWith(("https://"));
                 try {
                     certificates = getCertificates(captivePortalUrl);
                 } catch (AbstractWrapperException e) {
@@ -285,6 +281,8 @@ public class WifiReceiver extends BroadcastReceiver {
 
         private String getCaptivePortalUrl() throws CaptivePortalCheckException {
             HttpURLConnection conn = null;
+            //Remove all cookies
+            CookieManager.getInstance().removeAllCookie();
             try {
                 conn = (HttpURLConnection) getUrlConnection(WALLED_GARDEN_URL);
                 conn.setInstanceFollowRedirects(false);
