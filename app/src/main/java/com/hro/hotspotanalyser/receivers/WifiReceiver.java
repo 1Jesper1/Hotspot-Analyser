@@ -14,7 +14,6 @@ import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.support.v4.app.NotificationCompat;
-import android.webkit.CookieManager;
 
 import com.hro.hotspotanalyser.R;
 import com.hro.hotspotanalyser.ResultActivity;
@@ -281,8 +280,6 @@ public class WifiReceiver extends BroadcastReceiver {
 
         private String getCaptivePortalUrl() throws CaptivePortalCheckException {
             HttpURLConnection conn = null;
-            //Remove all cookies
-            CookieManager.getInstance().removeAllCookie();
             try {
                 conn = (HttpURLConnection) getUrlConnection(WALLED_GARDEN_URL);
                 conn.setInstanceFollowRedirects(false);
@@ -292,7 +289,14 @@ public class WifiReceiver extends BroadcastReceiver {
 
                 // The check url generates a 204, if it doesn't we most likely have a captive portal
                 if (responseCode != 204) {
-                    return conn.getHeaderField("Location");
+                    if(responseCode == 301 || responseCode == 302 || responseCode == 303) {
+                        return conn.getHeaderField("Location");
+                    }
+                    else {
+                        if(conn.getURL() != new URL(WALLED_GARDEN_URL)){
+                            return conn.getURL().toString();
+                        }
+                    }
                 }
 
                 return null;
