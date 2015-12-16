@@ -153,7 +153,9 @@ public class WifiReceiver extends BroadcastReceiver {
 
                 //Only log network if network has valid certificates, a captive portal and is not yet known
                 //if (hasCaptivePortal && areValidCerts && !matchesKnown) {
+                if(exceptions.size() == 0) {
                     logNetwork(ssid, captivePortalUrl, mFingerPrint, hasCertificates, areValidCerts);
+                }
                 //}
 
                 return new AnalyzerResult(
