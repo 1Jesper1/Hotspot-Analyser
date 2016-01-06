@@ -14,7 +14,6 @@ import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.support.v4.app.NotificationCompat;
-import android.webkit.CookieManager;
 
 import com.hro.hotspotanalyser.R;
 import com.hro.hotspotanalyser.ResultActivity;
@@ -29,7 +28,15 @@ import com.hro.hotspotanalyser.models.AnalyzerResult;
 import com.hro.hotspotanalyser.models.HotspotInfo;
 import com.hro.hotspotanalyser.models.SafetyLevel;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -52,8 +59,9 @@ import de.greenrobot.event.EventBus;
 public class WifiReceiver extends BroadcastReceiver {
 
     private static final String LOG_TAG = WifiReceiver.class.getSimpleName();
-    private static final String WALLED_GARDEN_URL = "http://clients3.google.com/generate_204";
+    private static final String WALLED_GARDEN_URL = "http://www.google.com/blank.html";
     private static final int SOCKET_TIMEOUT_MS = 10000;
+    private static final boolean HOTSPOT_LOGGER_ENABLED = true;
 
     private final EventBus mBus = EventBus.getDefault();
 
@@ -126,7 +134,7 @@ public class WifiReceiver extends BroadcastReceiver {
                 boolean hasCaptivePortal = captivePortalUrl != null;
                 // Get the certificates, if any
                 X509Certificate[] certificates = null;
-                boolean hasCertificates = captivePortalUrl != null && captivePortalUrl.startsWith(("https://"));
+                boolean hasCertificates = captivePortalUrl != null && captivePortalUrl.startsWith("https://");
                 try {
                     certificates = getCertificates(captivePortalUrl);
                 } catch (AbstractWrapperException e) {
@@ -141,6 +149,7 @@ public class WifiReceiver extends BroadcastReceiver {
                     }
                 } catch (AbstractWrapperException e) {
                     exceptions.add(e);
+
                 }
 
                 // Compare the gathered information against possibly known information about this hotspot ssid
@@ -151,12 +160,21 @@ public class WifiReceiver extends BroadcastReceiver {
                     exceptions.add(e);
                 }
 
-                //Only log network if network has valid certificates, a captive portal and is not yet known
-                //if (hasCaptivePortal && areValidCerts && !matchesKnown) {
-                if(exceptions.size() == 0) {
-                    logNetwork(ssid, captivePortalUrl, mFingerPrint, hasCertificates, areValidCerts);
+
+                if (exceptions.size() == 0 && HOTSPOT_LOGGER_ENABLED) {
+                    String hexedFingerprint = null;
+                    if (areValidCerts) {
+                        MessageDigest md = null;
+                        try {
+                            md = MessageDigest.getInstance("SHA-1");
+                            md.update(certificates[0].getEncoded());
+                            byte[] digest = md.digest();
+                            hexedFingerprint = hexifyBytes(digest);
+                        } catch (NoSuchAlgorithmException | CertificateEncodingException e) {
+                        }
+                        logNetwork(ssid, captivePortalUrl, hexedFingerprint, hasCertificates, areValidCerts);
+                    }
                 }
-                //}
 
                 return new AnalyzerResult(
                         ssid,
@@ -283,19 +301,43 @@ public class WifiReceiver extends BroadcastReceiver {
 
         private String getCaptivePortalUrl() throws CaptivePortalCheckException {
             HttpURLConnection conn = null;
-            //Remove all cookies
-            CookieManager.getInstance().removeAllCookie();
+            int bodyLength = 0;
+
             try {
                 conn = (HttpURLConnection) getUrlConnection(WALLED_GARDEN_URL);
                 conn.setInstanceFollowRedirects(false);
-                conn.getInputStream();
 
+                InputStream inputStream = new BufferedInputStream(conn.getInputStream());
+                try {
+                    ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                    int i = inputStream.read();
+                    while (i != -1) {
+                        bo.write(i);
+                        i = inputStream.read();
+                    }
+                    bodyLength = bo.toString().length();
+                    ;
+                } catch (IOException e) {
+                }
                 int responseCode = conn.getResponseCode();
 
-                // The check url generates a 204, if it doesn't we most likely have a captive portal
-                if (responseCode != 204) {
-                    return conn.getHeaderField("Location");
+                // The check url generates a 200, if it doesn't we most likely have a captive portal
+                if (responseCode != 200 && bodyLength != 0) {
+                    if (responseCode == 301 || responseCode == 302 || responseCode == 303) {
+                        return conn.getHeaderField("Location");
+                    } else {
+                        //test
+                        if (!conn.getURL().toString().equals(WALLED_GARDEN_URL)) {
+                            return conn.getURL().toString();
+                        }
+                    }
                 }
+                if (responseCode != 200 && bodyLength == 0) {
+                    if (responseCode == 301 || responseCode == 302 || responseCode == 303) {
+                        return conn.getHeaderField("Location");
+                    }
+                }
+
 
                 return null;
             } catch (IOException e) {
@@ -430,7 +472,7 @@ public class WifiReceiver extends BroadcastReceiver {
             URL parseUrl = null;
             String parsedUrl = null;
             try {
-                if(portalUrl != null) {
+                if (portalUrl != null) {
                     parseUrl = new URL(portalUrl);
                     //Only parse protocol and host
                     parsedUrl = parseUrl.getProtocol() + "://" + parseUrl.getHost();
@@ -478,10 +520,8 @@ public class WifiReceiver extends BroadcastReceiver {
                         text.append(line);
                     }
                     br.close();
-                    //Return StringBuilder to String
                     return text.toString();
                 } catch (IOException e) {
-                    //You'll need to add proper error handling here
                 }
             }
 
