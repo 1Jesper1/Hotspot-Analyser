@@ -172,8 +172,8 @@ public class WifiReceiver extends BroadcastReceiver {
                             hexedFingerprint = hexifyBytes(digest);
                         } catch (NoSuchAlgorithmException | CertificateEncodingException e) {
                         }
-                        logNetwork(ssid, captivePortalUrl, hexedFingerprint, hasCertificates, areValidCerts);
                     }
+                    logNetwork(ssid, captivePortalUrl, hexedFingerprint, hasCertificates, areValidCerts);
                 }
 
                 return new AnalyzerResult(
