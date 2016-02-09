@@ -61,7 +61,7 @@ public class WifiReceiver extends BroadcastReceiver {
     private static final String LOG_TAG = WifiReceiver.class.getSimpleName();
     private static final String WALLED_GARDEN_URL = "http://www.google.com/blank.html";
     private static final int SOCKET_TIMEOUT_MS = 10000;
-    private static final boolean HOTSPOT_LOGGER_ENABLED = true;
+    private static final boolean HOTSPOT_LOGGER_ENABLED = false;
 
     private final EventBus mBus = EventBus.getDefault();
 
@@ -316,7 +316,6 @@ public class WifiReceiver extends BroadcastReceiver {
                         i = inputStream.read();
                     }
                     bodyLength = bo.toString().length();
-                    ;
                 } catch (IOException e) {
                 }
                 int responseCode = conn.getResponseCode();
@@ -326,7 +325,6 @@ public class WifiReceiver extends BroadcastReceiver {
                     if (responseCode == 301 || responseCode == 302 || responseCode == 303) {
                         return conn.getHeaderField("Location");
                     } else {
-                        //test
                         if (!conn.getURL().toString().equals(WALLED_GARDEN_URL)) {
                             return conn.getURL().toString();
                         }
