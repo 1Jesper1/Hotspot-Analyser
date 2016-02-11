@@ -7,7 +7,7 @@ public class HotspotInfo {
     private static final HashMap<String, HotspotInfo> mKnownNetworks;
     static {
         mKnownNetworks = new HashMap<>();
-        mKnownNetworks.put("KPN Fon", new HotspotInfo("KPN Fon", "https://kpn.portal.fon.com/", "cb922c1965f60a9c6561ffd9fc851d5960642c4c"));
+        mKnownNetworks.put("SSID_Example", new HotspotInfo("SSID_Example", "https://www.example.com/", "1111111111111111111111111111111111111111"));
     }
 
     public final String SSID;
