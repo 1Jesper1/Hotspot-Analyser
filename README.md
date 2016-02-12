@@ -4,6 +4,7 @@ If you want to add a 'trusted' hotspot to the hashmap you can hardcode it in Hot
 mKnownNetworks.put("SSID_Example", new HotspotInfo("SSID_Example", "https://www.example.com/", "1111111111111111111111111111111111111111")); 
  
 A possible improvement of this application would be to add a database to it, which keeps track of trusted open hotspots. The database could have the following structure: an auto-incrementing primary key, the SSID, the captive portal URL and a hash of the SSL certificate. The combination of SSID, captive portal URL and the hash of the SSL certificate should be unique in the table. 
+
 CREATE TABLE `magazijn`.`hotspot` ( 
  `hotspot_id` INT NOT NULL AUTO_INCREMENT, 
  `ssid` VARCHAR(45) NOT NULL, 
@@ -11,6 +12,7 @@ CREATE TABLE `magazijn`.`hotspot` (
  `certificate_fingerprint` VARCHAR(45) NOT NULL, 
  PRIMARY KEY (`hotspot_id`), 
  UNIQUE INDEX `unique_hotspot` (`ssid` ASC, `captive_portal_url` ASC, `certificate_fingerprint` ASC)); 
+ 
 Another possible improvement would be to better explain the reason behind the score or perhaps a better way to notify the user of the score. 
  
 Made by Erik Schamper, Ian Seinstra and Jesper den Boer 
