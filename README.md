@@ -19,6 +19,6 @@ CREATE TABLE `magazijn`.`hotspot` (
  UNIQUE INDEX `unique_hotspot` (`ssid` ASC, `captive_portal_url` ASC, `certificate_fingerprint` ASC)); 
  ```
  
-Another possible improvement would be to better explain the reason behind the score or perhaps a better way to notify the user of the score. 
+Another possible improvement would be to better explain the reasoning behind the score or perhaps a better way to notify the user of the score. 
  
 Made by Erik Schamper, Ian Seinstra and Jesper den Boer 
